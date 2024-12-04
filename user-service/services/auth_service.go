@@ -1,26 +1,22 @@
 package services
 
 import (
-    "errors"
+	"errors"
+	"fmt"
 	"regexp"
 	"user-service/database"
 	"user-service/models"
-    "golang.org/x/crypto/bcrypt"
-    "fmt"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // HashPassword hashes the password using bcrypt
 func HashPassword(password string) (string, error) {
-    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-    if err != nil {
-        return "", err
-    }
-    return string(hashedPassword), nil
-}
-
-// VerifyPassword checks if the provided password matches the stored hashed password
-func VerifyPassword(hashedPassword, password string) error {
-    return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
 }
 
 // LoginUser checks if input is email or phone number and handles it.
@@ -46,21 +42,17 @@ func LoginUser(input, password string) (*models.User, error) {
 		return nil, err // User not found or other database error
 	}
 
-    // Debugging: Log the stored password hash and the input password
-    fmt.Println("Stored password hash:", user.PasswordHash)
-    fmt.Println("Provided password:", password)
-
-    // Test password comparison
-    err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-    if err != nil {
-        fmt.Println("Password comparison failed:", err)
-        return nil, errors.New("incorrect password")
-    } else {
-        fmt.Println("Password comparison succeeded")
-    }
+	// Debugging: Log the stored password hash and the input password
+	fmt.Println("Stored password hash:", user.PasswordHash)
+	fmt.Println("Provided password:", password)
+    fmt.Println("User email:", user.Email)
+	fmt.Println("Password (Raw):", password)
+	fmt.Println("Password Hash (Raw):", user.PasswordHash)
 
 	// Verify the password using the VerifyPassword function
-	if err := VerifyPassword(user.PasswordHash, password); err != nil {
+    err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+    fmt.Println(err)
+	if err != nil {
 		return nil, errors.New("incorrect password")
 	}
 
@@ -69,38 +61,36 @@ func LoginUser(input, password string) (*models.User, error) {
 
 // RegisterUser registers a new user with a hashed password
 func RegisterUser(user models.User) error {
-    // Check if user exists by email
-    existingUser, err := database.GetUserByEmail(user.Email)
-    if err != nil {
-        return errors.New("failed to check if user exists by email")
-    }
-    if existingUser != nil {
-        return errors.New("user with this email already exists")
-    }
+	// Check if user exists by email
+	existingUser, err := database.GetUserByEmail(user.Email)
+	if err != nil {
+		return errors.New("failed to check if user exists by email")
+	}
+	if existingUser != nil {
+		return errors.New("user with this email already exists")
+	}
 
-    // Check if user exists by phone number
-    existingPhoneUser, err := database.GetUserByPhoneNumber(user.PhoneNumber)
-    if err != nil {
-        return errors.New("failed to check if user exists by phone number")
-    }
-    if existingPhoneUser != nil {
-        return errors.New("user with this phone number already exists")
-    }
+	// Check if user exists by phone number
+	existingPhoneUser, err := database.GetUserByPhoneNumber(user.PhoneNumber)
+	if err != nil {
+		return errors.New("failed to check if user exists by phone number")
+	}
+	if existingPhoneUser != nil {
+		return errors.New("user with this phone number already exists")
+	}
+    fmt.Println(user.PasswordHash)
+	// Hash the password before saving the user
+	hashedPassword, err := HashPassword(user.PasswordHash)
+	if err != nil {
+		return errors.New("failed to hash password")
+	}
+	user.PasswordHash = hashedPassword
 
-    // Hash the password before saving the user
-    hashedPassword, err := HashPassword(user.PasswordHash)
-    if err != nil {
-        return errors.New("failed to hash password")
-    }
-    fmt.Println("Hashed password:", hashedPassword) // Print hashed password for debugging
-    user.PasswordHash = hashedPassword
+	// Insert user into database
+	err = database.InsertUser(user)
+	if err != nil {
+		return errors.New("failed to insert user into the database")
+	}
 
-    // Insert user into database
-    err = database.InsertUser(user)
-    if err != nil {
-        return errors.New("failed to insert user into the database")
-    }
-
-    return nil
+	return nil
 }
-

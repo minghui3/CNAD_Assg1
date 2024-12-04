@@ -67,3 +67,6 @@ func InsertUser(user models.User) error {
     _, err := DB.Exec(query, user.Name, user.Email, user.PhoneNumber, user.Membership, user.PasswordHash)
     return err
 }
+
+// UpdateUser allows an existing user to change his credentials
+func UpdateUser()
