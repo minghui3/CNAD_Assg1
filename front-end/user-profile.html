@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h2>User Profile</h2>
+        <div id="profile-container">
+            <div id="profile-info" class="hidden">
+                <p><strong>Name:</strong> <span id="user-name"></span></p>
+                <p><strong>Email:</strong> <span id="user-email"></span></p>
+                <p><strong>Phone Number:</strong> <span id="user-phone"></span></p>
+                <p><strong>Membership:</strong> <span id="user-membership"></span></p>
+            </div>
+            <button id="edit-profile-btn" class="hidden">Edit Profile</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const userID = sessionStorage.user;  // Retrieve the user ID from sessionStorage
+            if (!userID) {
+                console.error("User ID is not available in sessionStorage.");
+                return; // Exit the function if no user ID is found
+            }
+
+            // Fetch user profile
+            fetch(`http://localhost:8081/api/v1/get-profile/${userID}`)
+                .then(response => response.json())
+                .then(user => {
+                    // Check if the user object is available
+                    if (user && user.name && user.email && user.phone_number && user.membership_tier) {
+                        // Display user info
+                        document.getElementById('user-name').textContent = user.name;
+                        document.getElementById('user-email').textContent = user.email;
+                        document.getElementById('user-phone').textContent = user.phone_number;
+                        document.getElementById('user-membership').textContent = user.membership_tier;
+                        document.getElementById('edit-profile-btn').classList.remove('hidden');
+                    } else {
+                        // Handle error (user object is incomplete or missing)
+                        document.getElementById('loading-message').textContent = "Failed to load user profile.";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching user profile:", error);
+                    document.getElementById('loading-message').textContent = "Error loading profile.";
+                });
+
+            // Handle "Edit Profile" button click
+            document.getElementById('edit-profile-btn').addEventListener('click', function () {
+                // Redirect to edit profile page
+                window.location.href = 'edit-profile.html';
+            });
+        });
+    </script>
+
+</body>
+
+</html>

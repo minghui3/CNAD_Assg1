@@ -1,32 +1,51 @@
 package services
 
 import (
-    "errors"
-    "user-service/models"
+	"errors"
+	"user-service/database"
+	"user-service/models"
+    "fmt"
 )
 
-// ProfileService manages user profile-related actions
-var users = []models.User{} // Simulated in-memory user storage
-
 // UpdateProfile updates a user's profile with new information
-func UpdateProfile(userID int, newName, newMembership string) (*models.User, error) {
-    for i, u := range users {
-        if u.ID == userID {
-            // Update user information
-            users[i].Name = newName
-            users[i].Membership = newMembership
-            return &users[i], nil
-        }
+func UpdateProfile(userID int, name string, email string, phone_number string) (*models.User, error) {
+    err := database.UpdateUserByID(userID, name, email, phone_number)
+    if err != nil {
+        return nil, fmt.Errorf("failed to update user with ID %d: %w", userID, err)
     }
-    return nil, errors.New("user not found")
+    updatedUser, err := database.GetUserByID(userID)
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch updated user with ID %d: %w", userID, err)
+    }
+    return updatedUser, nil
 }
 
 // GetProfile fetches a user's profile information
 func GetProfile(userID int) (*models.User, error) {
-    for _, u := range users {
-        if u.ID == userID {
-            return &u, nil
+    var user *models.User
+	var err error
+    user, err = database.GetUserByID(userID)
+    if err != nil {
+        if errors.Is(err, database.ErrUserNotFound) { // Check for error in the case that user is not found
+            return nil, fmt.Errorf("user with ID %d not found", userID)
         }
+        return nil, fmt.Errorf("failed to fetch user profile: %w", err) // Wrap the error
     }
-    return nil, errors.New("user not found")
+    return user, nil
 }
+
+// GetRentalHistory retrieves the rental history for a specific user
+func GetRentalHistory(userID int) (*models.RentalHistory, error) {
+	// Fetch the rental history from the database
+	rentalHistory, err := database.GetRentalHistoryByUserID(userID)
+	if err != nil {
+		return nil, errors.New("failed to fetch rental history")
+	}
+
+	if len(rentalHistory) == 0 {
+		return nil, errors.New("no rental history found for the user")
+	}
+
+	return rentalHistory, nil
+}
+

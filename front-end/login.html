@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h2>Login</h2>
+        <form id="login-form">
+            <label for="input">Email or Phone Number:</label>
+            <input type="text" id="input" name="input" required><br>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required><br>
+
+            <button type="submit">Login</button>
+        </form>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const data = {
+                input: document.getElementById('input').value,
+                password: document.getElementById('password').value
+            };
+
+            fetch('http://localhost:8081/api/v1/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+                .then(response => response.json())
+                .then(user => {
+                    // Store the user object in sessionStorage
+                    sessionStorage.setItem('user', JSON.stringify(user.user_id));
+
+                    //display the success message
+                    document.getElementById('message').textContent = "Login successful!";
+                })
+                .catch(error => {
+                    document.getElementById('message').textContent = "Error: " + error.message;
+                });
+        });
+    </script>
+</body>
+
+</html>

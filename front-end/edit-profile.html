@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Profile</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Update Profile</h1>
+        <form id="update-profile-form">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="phone-number">Phone Number:</label>
+            <input type="text" id="phone-number" name="phone_number" required>
+
+            <button type="submit">Update Profile</button>
+            <p id="response-message" class="hidden"></p>
+        </form>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+                const form = document.getElementById('update-profile-form');
+                const responseMessage = document.getElementById('response-message');
+
+                // Simulated user ID (replace with actual logic for dynamic user ID retrieval)
+                const userID = sessionStorage.getItem('userID') || 2;
+
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    // Collect form data
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const phoneNumber = document.getElementById('phone-number').value;
+
+                    // Create the payload
+                    const payload = {
+                        name: name,
+                        email: email,
+                        phone_number: phoneNumber
+                    };
+
+                    // Make the API call
+                    fetch(`http://localhost:8081/api/v1/update-profile/${userID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`Error: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Display success message
+                            responseMessage.textContent = 'Profile updated successfully!';
+                            responseMessage.style.color = 'green';
+                            responseMessage.classList.remove('hidden');
+                        })
+                        .catch(error => {
+                            // Display error message
+                            responseMessage.textContent = `Failed to update profile: ${error.message}`;
+                            responseMessage.style.color = 'red';
+                            responseMessage.classList.remove('hidden');
+                        });
+                });
+            });
+
+    </script>
+</body>
+</html>

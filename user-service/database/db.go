@@ -5,9 +5,12 @@ import (
     "log"
 	_ "github.com/go-sql-driver/mysql"
 	"user-service/models"
+	"errors"
 )
 
 var DB *sql.DB
+// ErrUserNotFound is returned when a user cannot be found in the database
+var ErrUserNotFound = errors.New("user not found")
 
 // Initialize initializes the MySQL database connection
 func Initialize() {
@@ -30,8 +33,8 @@ func Initialize() {
 // GetUserByEmail retrieves a user by email.
 func GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	err := DB.QueryRow("SELECT id, name, email, phone_number, membership_tier, password FROM Users WHERE email = ?", email).
-		Scan(&user.ID, &user.Name, &user.Email, &user.PhoneNumber, &user.Membership, &user.PasswordHash)
+	err := DB.QueryRow("SELECT user_id, name, email, phone_number, membership_id, password, verification_code FROM Users WHERE email = ?", email).
+		Scan(&user.ID, &user.Name, &user.Email, &user.PhoneNumber, &user.Membership, &user.PasswordHash, &user.VerificationCode)
 	if err != nil {
 		// Check for "no rows" error
 		if err == sql.ErrNoRows {
@@ -47,7 +50,7 @@ func GetUserByEmail(email string) (*models.User, error) {
 // GetUserByPhoneNumber retrieves a user by phone number.
 func GetUserByPhoneNumber(phoneNumber string) (*models.User, error) {
 	var user models.User
-	err := DB.QueryRow("SELECT id, name, email, phone_number, membership_tier, password FROM Users WHERE phone_number = ?", phoneNumber).
+	err := DB.QueryRow("SELECT user_id, name, email, phone_number, membership_id, password FROM Users WHERE phone_number = ?", phoneNumber).
 		Scan(&user.ID, &user.Name, &user.Email, &user.PhoneNumber, &user.Membership, &user.PasswordHash)
 	if err != nil {
 		// Check for "no rows" error
@@ -63,10 +66,35 @@ func GetUserByPhoneNumber(phoneNumber string) (*models.User, error) {
 
 // InsertUser inserts a new user into the database
 func InsertUser(user models.User) error {
-    query := "INSERT INTO Users (name, email, phone_number, membership_tier, password) VALUES (?, ?, ?, ?, ?)"
-    _, err := DB.Exec(query, user.Name, user.Email, user.PhoneNumber, user.Membership, user.PasswordHash)
+    query := "INSERT INTO Users (name, email, phone_number, password, verification_code) VALUES (?, ?, ?, ?, ?)"
+    _, err := DB.Exec(query, user.Name, user.Email, user.PhoneNumber, user.PasswordHash, user.VerificationCode)
     return err
 }
 
-// UpdateUser allows an existing user to change his credentials
-func UpdateUser()
+func UpdateUserVerifiedStatus(email string, verified bool) error {
+	query := "UPDATE Users SET verified = ? WHERE email = ?"
+	_, err := DB.Exec(query, verified, email) // Assuming `db` is your database connection
+	return err
+}
+
+func GetUserByID(userID int) (*models.User, error) {
+	var user models.User
+	err := DB.QueryRow("SELECT user_id, name, email, phone_number, membership_id, password FROM Users WHERE user_id = ?", userID).
+		Scan(&user.ID, &user.Name, &user.Email, &user.PhoneNumber, &user.Membership, &user.PasswordHash)
+	if err != nil {
+		// Check for "no rows" error
+		if err == sql.ErrNoRows {
+			// No user found, return nil
+			return nil, ErrUserNotFound
+		}
+		// Some other error occurred
+		return nil, err
+	}
+	return &user, nil
+}
+
+func UpdateUserByID(user_id int, name string, email string, phone_number string) error {
+	query := "UPDATE Users SET name = ?, email = ?, phone_number = ? WHERE user_id = ?"
+	_, err := DB.Exec(query, name, email, phone_number, user_id)
+	return err
+}
