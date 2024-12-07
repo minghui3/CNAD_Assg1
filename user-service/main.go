@@ -22,7 +22,7 @@ func main() {
     // Wrap the router with the CORS middleware
     corsRouter := enableCORS(router)
 
-    log.Println("Server is running on port 8081")
+    log.Println("User server is running on port 8081")
     log.Fatal(http.ListenAndServe(":8081", corsRouter))
 }
 

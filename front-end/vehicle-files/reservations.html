@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Reservations</title>
+    <link rel="stylesheet" href="../styles/style.css">
+</head>
+
+<body>
+    <header>
+        <h1 style = "color: white">Your Reservations</h1>
+    </header>
+    <main>
+        <div id="reservations-container">
+            <!-- Reservations will be dynamically added here -->
+        </div>
+        <!-- Add this in your HTML -->
+        <div id="reservationForm" style="display: none;">
+            <h3>Enter New Reservation Details</h3>
+            <label>
+                Start Date & Time (YYYY-MM-DD T HH:MM:SS): <input type="datetime" id="reservationStart">
+            </label><br>
+            <label>
+                End Date & Time (YYYY-MM-DD T HH:MM:SS): <input type="datetime" id="reservationEnd">
+            </label><br>
+            <label>
+                Amount: <input type="number" id="amount">
+            </label><br>
+            <button id="saveReservation">Save</button>
+        </div>
+
+    </main>
+    <script>
+        const userID = sessionStorage.user;  // Retrieve the user ID from sessionStorage
+            if (!userID) {
+                console.error("User ID is not available in sessionStorage.");
+            }
+        // Show the form when adding a new reservation
+        var reser_id
+        var vehicl_id
+            function showReservationForm(reserv_id,vehic_id) {
+                const form = document.getElementById('reservationForm');
+                form.style.display = 'block'; // Show the form
+                reser_id = reserv_id
+                vehicl_id = vehic_id
+            }
+
+        // Save the new reservation details
+        document.getElementById('saveReservation').addEventListener('click', () => {
+            const revStart = document.getElementById('reservationStart').value;
+            const revEnd = document.getElementById('reservationEnd').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            if (!revStart || !revEnd || !amount) {
+                alert('Please fill out all fields!');
+                return;
+            }
+            else {
+                updateReservation(reser_id, vehicl_id, revStart, revEnd, amount);
+            }
+
+            // Hide the form after saving
+            document.getElementById('reservationForm').style.display = 'none';
+        });
+
+        // Fetch reservations for the user
+        async function fetchReservations() {
+            try {
+                const response = await fetch(`http://localhost:8082/api/v1/reservations/${userID}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch reservations');
+                }
+                const reservations = await response.json();
+                displayReservations(reservations);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load reservations. Please try again later.');
+            }
+        }
+        reservationsContainer = document.getElementById("reservations-container")
+        // Display reservations on the page
+        function displayReservations(reservations) {
+            reservationsContainer.innerHTML = '';
+            reservations.forEach(reservation => {
+                const reservationCard = document.createElement('div');
+                reservationCard.classList.add('reservation-card');
+                reservationCard.innerHTML = `
+        <h2>Reservation #${reservation.reservation_id}</h2>
+        <p><strong>Vehicle ID:</strong> ${reservation.vehicle_id}</p>
+        <p><strong>Start Time:</strong> ${new Date(reservation.start_time).toLocaleString()}</p>
+        <p><strong>End Time:</strong> ${new Date(reservation.end_time).toLocaleString()}</p>
+        <p><strong>Status:</strong> ${reservation.status}</p>
+        <p><strong>Total Amount:</strong> $${reservation.total_amount.toFixed(2)}</p>
+        <div class="actions">
+            <button class="update-btn" onclick="showReservationForm(${reservation.reservation_id},${reservation.vehicle_id})">Update</button>
+            <button class="delete-btn" onclick="deleteReservation(${reservation.reservation_id})">Delete</button>
+        </div>
+    `;
+                reservationsContainer.appendChild(reservationCard);
+            });
+        }
+
+        // Update reservation
+        async function updateReservation(RevID,VehID,StartTime,EndTime,TotalAmount) {
+            try {
+                const response = await fetch(`http://localhost:8082/api/v1/reservations/${userID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ reservation_id: RevID, vehicle_id: VehID, start_time: StartTime, end_time:EndTime, total_amount:TotalAmount }),
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to update reservation');
+                }
+                alert('Reservation updated successfully');
+                fetchReservations();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to update reservation. Please try again later.');
+            }
+        }
+
+        // Delete reservation
+        async function deleteReservation(reservationId) {
+            if (!confirm('Are you sure you want to delete this reservation?')) return;
+
+            try {
+                const response = await fetch(`http://localhost:8082/api/v1/reservations/${userID}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ reservation_id: reservationId }),
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to delete reservation');
+                }
+                alert('Reservation deleted successfully');
+                fetchReservations();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to delete reservation. Please try again later.');
+            }
+        }
+
+        // Initial fetch of reservations
+        fetchReservations();
+    </script>
+</body>
+</html>

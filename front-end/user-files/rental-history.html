@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rental History</title>
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="../styles/style.css">
 </head>
 
 <body>
@@ -69,18 +69,34 @@
                 }
 
                 data.forEach((item) => {
+                    const rentalId = item.rental_id || 'N/A';
+                    const vehicleId = item.vehicle_id || 'N/A';
+                    const model = item.model || 'Unknown Model';
+
+                    // Safely parse rental_start & rental_end dates
+                    const startTime = item.rental_start
+                        ? new Date(item.rental_start).toLocaleString()
+                        : 'Unknown';
+                    const endTime = item.rental_end
+                        ? new Date(item.rental_end).toLocaleString()
+                        : 'Unknown';
+
+                    const totalAmount = (item.total_cost && typeof item.total_cost === 'number')
+                        ? item.total_cost.toFixed(2)
+                        : '0.00';
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${item.rental_id}</td>
-                        <td>${item.vehicle_id}</td>
-                        <td>${item.model}</td>
-                        <td>${new Date(item.start_time).toLocaleString()}</td>
-                        <td>${new Date(item.end_time).toLocaleString()}</td>
-                        <td>${item.total_cost.toFixed(2)}</td>
-                        `;
+                        <td>${rentalId}</td>
+                        <td>${vehicleId}</td>
+                        <td>${model}</td>
+                        <td>${startTime}</td>
+                        <td>${endTime}</td>
+                        <td>${totalAmount}</td>
+                    `;
                     tableBody.appendChild(row);
-                });
-            }
+                    });
+                }
 
     </script>
 </body>
