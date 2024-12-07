@@ -111,7 +111,6 @@ func GetRentalHistoryByUserID(userID int) ([]models.RentalHistory, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	log.Printf("Fetching rental history for userID: %d", userID)
 	var (
 		rentalID    string
 		vehicleID   int
@@ -140,9 +139,6 @@ func GetRentalHistoryByUserID(userID int) ([]models.RentalHistory, error) {
 			log.Printf("Failed to parse rental_end: %v", err)
 			return nil, err
 		}
-
-		log.Printf("Row scanned - rental_id: %s, vehicle_id: %d, rental_start: %s, rental_end: %s, total_amount: %.2f", 
-			rentalID, vehicleID, rentalStart, rentalEnd, totalAmount)
 
 		rentalHistory = append(rentalHistory, models.RentalHistory{
 			RentalID:     rentalID,

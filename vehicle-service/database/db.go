@@ -163,14 +163,14 @@ func UpdateReservationsByID(user_id int, updated models.Reservation) error {
 }
 
 func DeleteReservationByID(user_id int, rev_id int) error {
-	query := "DELETE FROM Reservations WHERE reservation_id = ? AND user_id = ?"
+	query := "DELETE FROM Reservations WHERE reservation_id = ? AND user_id = ? AND (start_time < NOW() - INTERVAL 7 DAY OR start_time > NOW() + INTERVAL 7 DAY)"
 	result, err := DB.Exec(query, rev_id, user_id)
 	if err != nil {
 		return err
 	}
 	rowsAffected, err := result.RowsAffected()
 	if rowsAffected == 0 {
-		return errors.New("no reservation/user found with the given ID")
+		return errors.New("no reservation/user found with the given ID or user tried to delete within 7 days")
 	}
 	return err
 }
@@ -221,8 +221,6 @@ func CheckUserReservation(userID int, startTime time.Time, endTime time.Time) (b
 func UpdateReservationStatusIfNeeded(vehicleID int) error {
 	currentTime := time.Now()
 
-	// Log the current time to confirm execution flow
-	fmt.Printf("Running UpdateReservationStatusIfNeeded at %v for vehicleID %d\n", currentTime, vehicleID)
 	// Update status to "active" if the current time is within the reservation range
 	activeQuery := `
 		UPDATE Reservations 
