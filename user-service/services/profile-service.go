@@ -35,9 +35,11 @@ func GetProfile(userID int) (*models.User, error) {
 }
 
 // GetRentalHistory retrieves the rental history for a specific user
-func GetRentalHistory(userID int) (*models.RentalHistory, error) {
+func GetRentalHistory(userID int) ([]models.RentalHistory, error) {
+    var rentalHistory []models.RentalHistory
+    var err error
 	// Fetch the rental history from the database
-	rentalHistory, err := database.GetRentalHistoryByUserID(userID)
+	rentalHistory, err = database.GetRentalHistoryByUserID(userID)
 	if err != nil {
 		return nil, errors.New("failed to fetch rental history")
 	}

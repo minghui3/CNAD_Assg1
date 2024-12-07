@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rental History</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+
+<body>
+    <header>
+        <h1>Rental History</h1>
+    </header>
+
+    <main>
+        <div id="rental-history-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rental ID</th>
+                        <th>Vehicle ID</th>
+                        <th>Model</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="rental-history-body">
+                    <!-- Rows will dynamically populate here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+                const userID = sessionStorage.user;  // Retrieve the user ID from sessionStorage
+                if (!userID) {
+                    console.error("User ID is not available in sessionStorage.");
+                    return; // Exit the function if no user ID is found
+                }    
+                fetchRentalHistory(userID);
+            });
+            
+            // Function to fetch rental history from your backend
+            async function fetchRentalHistory(userID) {
+                try {
+                    const response = await fetch(`http://localhost:8081/api/v1/rental-history/${userID}`); // Adjust this URL if needed
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const rentalHistory = await response.json();
+                    renderRentalHistory(rentalHistory);
+                } catch (error) {
+                    console.error('Error fetching rental history:', error);
+                    alert('Unable to load rental history');
+                }
+            }
+
+            // Function to dynamically render the rental history table
+            function renderRentalHistory(data) {
+                const tableBody = document.getElementById('rental-history-body');
+                tableBody.innerHTML = ''; // Clear existing table rows
+
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6">No rental history available</td></tr>`;
+                    return;
+                }
+
+                data.forEach((item) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.rental_id}</td>
+                        <td>${item.vehicle_id}</td>
+                        <td>${item.model}</td>
+                        <td>${new Date(item.start_time).toLocaleString()}</td>
+                        <td>${new Date(item.end_time).toLocaleString()}</td>
+                        <td>${item.total_cost.toFixed(2)}</td>
+                        `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+    </script>
+</body>
+
+</html>
