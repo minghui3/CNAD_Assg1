@@ -12,9 +12,25 @@
     <div class="container">
         <h1>Available Cars</h1>
         <div id="car-list"></div>
+        <!-- Modal for car details -->
+        <div id="car-modal">
+            <div id="modal-content">
+                <h2>Car Details</h2>
+                <p><strong>Model:</strong> <span id="modal-model"></span></p>
+                <p><strong>Location:</strong> <span id="modal-location"></span></p>
+                <p><strong>Start Date:</strong><span id="modal-start"></span</p>
+                <p><strong>End Date:</strong><span id="modal-end"></span</p>
+                <p><strong>Amount:</strong> <span id="modal-amount"></span</p>
+                <p><strong>Promotion Code:</strong> <input type="text" id="promo-code"></p>
+                <button onclick="applyPromotionCode()">Apply Code</button>
+                <button onclick="bookCar()">Confirm Booking</button>
+                <div id="close-btn" onclick="closeModal()">Cancel</div>
+            </div>
+        </div>
     </div>
 
     <script>
+        let selectedVehicleID = null;
          const userID = parseInt(sessionStorage.user);  // Retrieve the user ID from sessionStorage
             if (!userID) {
                 console.error("User ID is not available in sessionStorage.");
@@ -46,8 +62,7 @@
                     const bookButton = document.createElement('button');
                     bookButton.classList.add('book-button');
                     bookButton.textContent = 'Book Now';
-                    bookButton.onclick = () => promptBookingDates(car.vehicle_id);
-
+                    bookButton.onclick = () => promptBookingDates(car);
                     carDiv.appendChild(carInfo);
                     carDiv.appendChild(bookButton);
                     carList.appendChild(carDiv);
@@ -56,42 +71,183 @@
                 console.error('Error fetching vehicles:', error);
             }
         }
-
+        var startDate;
+        var endDate;
+        var vehicleId;
+        var finalAmount;
         // Prompt user to enter booking dates
-            async function promptBookingDates(vehicleID) {
+        async function promptBookingDates(car) {
+            try {
+                vehicleId = car.vehicle_id
+                startDate = prompt("Enter the start date (in format YYYY-MM-DDTHH:MM, e.g., 2024-12-10T10:00:00Z):");
+                endDate = prompt("Enter the end date (in format YYYY-MM-DDTHH:MM, e.g., 2024-12-15T15:00:00Z):");
+                console.log("startDate:", startDate);
+                console.log("endDate:", endDate);
+                // Validate date format
+                if (new Date(startDate).getTime() && new Date(endDate).getTime() && new Date(startDate) < new Date(endDate)) {
+                    finalAmount = await calculateTotalAmount(startDate, endDate);
+                    openModal(startDate, endDate, vehicleId, finalAmount, car)
+                } else {
+                    alert("Invalid dates. Please ensure the format is correct and the end date is after the start date.");
+                }
+            } catch (error) {
+                console.error('Error with date input:', error);
+            }
+        }
+
+        // Apply promotion code by calling the backend endpoint
+        async function applyPromotionCode() {
+            const promoCode = document.getElementById('promo-code').value.trim();
+
+            if (!promoCode) {
+                alert("Please enter a valid promotion code.");
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8083/api/v1/promotion', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ promo_code: promoCode, vehicle_id: selectedVehicleID })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to apply promotion code');
+                }
+
+                const result = await response.json();
+
+                if (result.valid && result.discount) {
+                    finalAmount = baseAmount - result.discount;
+                    if (finalAmount < 0) finalAmount = 0; // Ensure the amount doesn't drop below 0
+                    document.getElementById('amount').value = finalAmount;
+                    alert(`Promotion code applied! You saved $${result.discount}`);
+                } else {
+                    alert("Invalid promotion code.");
+                    document.getElementById('amount').value = baseAmount; // Revert back to base amount
+                }
+            } catch (error) {
+                console.error('Error applying promotion code:', error);
+                alert('Failed to apply promotion code.');
+            }
+        }
+
+        async function calculateTotalAmount(startDate, endDate) {
                 try {
-                    const startDate = prompt("Enter the start date (in format YYYY-MM-DDTHH:MM, e.g., 2024-12-10T10:00:00Z):");
-                    const endDate = prompt("Enter the end date (in format YYYY-MM-DDTHH:MM, e.g., 2024-12-15T15:00:00Z):");
-                    const Amount = prompt("Enter amount:");
-                    const parsedAmount = parseFloat(Amount);
-                    // Validate date format
-                    if (new Date(startDate).getTime() && new Date(endDate).getTime() && new Date(startDate) < new Date(endDate)) {
-                        await bookCar(vehicleID, startDate, endDate, parsedAmount);
-                    } else {
-                        alert("Invalid dates. Please ensure the format is correct and the end date is after the start date.");
+                    console.log(endDate);
+                    const response = await fetch('http://localhost:8083/api/v1/calculate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ start_time: startDate, end_time: endDate})
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch the total amount');
                     }
+
+                    const result = await response.json();
+
+                    if (result && result.amount) {
+                        alert(`Total amount calculated: $${result.amount}`);
+                        return result.amount;
+                    }
+
+                    return null;
                 } catch (error) {
-                    console.error('Error with date input:', error);
+                    console.error('Error fetching total amount:', error);
+                    return null;
                 }
             }
 
+        // Open modal and populate with car details
+        function openModal(startDate1, endDate1, vehicleId1, finalAmount1, car) {
+            selectedVehicleID = car.vehicle_id; 
+            document.getElementById('modal-model').innerText = car.model;
+            document.getElementById('modal-location').innerText = car.location;
+            document.getElementById('modal-start').innerText = startDate1;
+            document.getElementById('modal-end').innerText = endDate1;
+            document.getElementById('modal-amount').innerText = finalAmount1
+
+            const modal = document.getElementById('car-modal');
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('car-modal');
+            modal.style.display = 'none';
+        }
+
         // Book a car
-        async function bookCar(vehicleID, startDate, endDate, parsedAmount) {
+        async function bookCar() {
             try {
-                const response = await fetch(`http://localhost:8082/api/v1/reservations`, {
+                const reservationResponse = await fetch(`http://localhost:8082/api/v1/reservations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({user_id: userID, vehicle_id: vehicleID, start_time: startDate, end_time: endDate, total_amount: parsedAmount})
+                    body: JSON.stringify({user_id: userID, vehicle_id: selectedVehicleID, start_time: startDate, end_time: endDate, total_amount: finalAmount})
+                });
+                console.log(finalAmount);
+                const reservationData = await reservationResponse.json();
+                const reservationId = reservationData.reservation_id;
+                console.log('Reservation API Response:', reservationData);
+                console.log(reservationData.reservation_id)
+
+                // Insert billing
+                const billingResponse = await fetch(`http://localhost:8083/api/v1/billing`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reservation_id: reservationId,
+                        total_amount: finalAmount,
+                    })
                 });
 
-                if (!response.ok) {
-                    throw new Error('Failed to book vehicle');
+                if (!billingResponse.ok) {
+                    throw new Error('Failed to insert billing');
+                }
+                promotionField = document.getElementById("promo-code").value;
+                // Check and update promotion (if applicable)
+                if (promotionField) { // Replace with the actual condition for checking promotion
+                    const promotionResponse = await fetch(`http://localhost:8083/api/v1/promotion`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            reservation_id: reservationId,
+                            promotion_code: promotionField
+                        })
+                    });
+
+                    if (!promotionResponse.ok) {
+                        throw new Error('Failed to update promotion');
+                    }
+                }
+
+                // Update the amount in the reservation
+                const amountUpdateResponse = await fetch(`http://localhost:8083/api/v1/updateamount`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reservation_id : reservationId
+                    })
+                });
+
+                if (!amountUpdateResponse.ok) {
+                    throw new Error('Failed to update reservation amount');
                 }
 
                 alert('Car booked successfully!');
-                fetchAvailableCars(); // Refresh available cars
+
+                // Refresh available cars
+                fetchAvailableCars();
             } catch (error) {
                 console.error('Error booking vehicle:', error);
                 alert('Failed to book car. Please try again later.');

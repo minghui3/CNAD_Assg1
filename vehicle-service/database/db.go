@@ -141,10 +141,21 @@ func InsertReservation(reservation models.Reservation) (*models.Reservation, err
 	if err != nil {
 		return nil, err
 	}
+
 	rowsAffected, err := result.RowsAffected()
 	if rowsAffected == 0 {
 		return nil, errors.New("no reservation/user found with the given ID")
 	}
+
+	// Get the auto-incremented ID
+	reservationID, err := result.LastInsertId()
+	if err != nil {
+		log.Printf("Error fetching inserted ID: %v", err)
+		return nil, err
+	}
+
+	// Set the fetched reservation ID to the model
+	reservation.ReservationID = int(reservationID)
 	return &reservation, err
 }
 
@@ -177,7 +188,7 @@ func DeleteReservationByID(user_id int, rev_id int) error {
 
 // CheckVehicleReservation checks if the vehicle already has a reservation with overlapping time range
 func CheckVehicleReservation(vehicleID int, startTime time.Time, endTime time.Time) (bool, error) {
-	query := `SELECT COUNT(*) FROM Reservations WHERE vehicle_id = ? AND start_time <= ? AND end_time >= ? AND status = 'active'`
+	query := `SELECT COUNT(*) FROM Reservations WHERE vehicle_id = ? AND start_time > ? AND end_time < ? AND status = 'active'`
 
 	// Execute the query
 	var count int
@@ -198,7 +209,7 @@ func CheckVehicleReservation(vehicleID int, startTime time.Time, endTime time.Ti
 
 // CheckUserReservation checks if the user already has a reservation with overlapping time range
 func CheckUserReservation(userID int, startTime time.Time, endTime time.Time) (bool, error) {
-	query := `SELECT COUNT(*) FROM Reservations WHERE user_id = ? AND start_time <= ? AND end_time >= ? AND status = 'active'`
+	query := `SELECT COUNT(*) FROM Reservations WHERE user_id = ? AND start_time > ? AND end_time < ? AND status = 'active'`
 
 	// Execute the query
 	var count int

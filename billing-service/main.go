@@ -3,8 +3,8 @@ package main
 import (
     "log"
     "net/http"
-    "user-service/handlers"
-	"user-service/database"
+    "billing-service/handlers"
+	"billing-service/database"
 	"github.com/gorilla/mux"
 )
 
@@ -12,13 +12,16 @@ func main() {
 	database.Initialize()
 
 	router := mux.NewRouter()
-    router.HandleFunc("/api/v1/calculate", handlers.RegisterHandler).Methods("POST")
+    router.HandleFunc("/api/v1/calculate", handlers.CalculateAmountHandler).Methods("POST")
+	router.HandleFunc("/api/v1/promotion", handlers.ApplyPromotionHandler).Methods("PUT")
+	router.HandleFunc("/api/v1/updateamount", handlers.UpdateReservationHandler).Methods("PUT")
+	router.HandleFunc("/api/v1/billing", handlers.InsertBillingHandler).Methods("POST")
 
     // Wrap the router with the CORS middleware
     corsRouter := enableCORS(router)
 
-    log.Println("User server is running on port 8081")
-    log.Fatal(http.ListenAndServe(":8081", corsRouter))
+    log.Println("User server is running on port 8083")
+    log.Fatal(http.ListenAndServe(":8083", corsRouter))
 }
 
 func enableCORS(next http.Handler) http.Handler {
