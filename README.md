@@ -171,3 +171,31 @@ The system is built using the following technologies:
 ![test](https://github.com/user-attachments/assets/2130dc94-5223-4ffc-81e3-c041ac75e883)
 
 
+## How to Set Up 🚀
+
+### **1. Set Up Dependencies**
+
+Set up services by following the instructions below:
+
+cd to each service directory (eg. billing-service, user-service)
+run `go mod tidy`
+
+
+---
+
+### **2. Configure Database**
+
+Set up database by using the script given
+
+
+---
+
+### **3. Run Services**
+
+Ensure you configure the inter-service communication paths correctly using the `go.mod replace` or direct paths as necessary.
+
+Run services by following the instructions below:
+
+open 3 terminals
+cd to each service directory (eg. billing-service, user-service)
+run `go run main.go` for each terminal
