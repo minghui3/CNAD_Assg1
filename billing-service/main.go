@@ -20,7 +20,7 @@ func main() {
     // Wrap the router with the CORS middleware
     corsRouter := enableCORS(router)
 
-    log.Println("User server is running on port 8083")
+    log.Println("Billing server is running on port 8083")
     log.Fatal(http.ListenAndServe(":8083", corsRouter))
 }
 

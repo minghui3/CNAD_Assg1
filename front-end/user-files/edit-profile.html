@@ -30,8 +30,10 @@
                 const form = document.getElementById('update-profile-form');
                 const responseMessage = document.getElementById('response-message');
 
-                // Simulated user ID (replace with actual logic for dynamic user ID retrieval)
-                const userID = sessionStorage.getItem('userID') || 2;
+                const userID = sessionStorage.user;  // Retrieve the user ID from sessionStorage
+                if (!userID) {
+                    console.error("User ID is not available in sessionStorage.");
+                }
 
                 form.addEventListener('submit', function (e) {
                     e.preventDefault();
